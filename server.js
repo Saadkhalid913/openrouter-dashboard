@@ -27,6 +27,13 @@ if (!DASHBOARD_TOKEN) {
   process.exit(1);
 }
 
+// Allow iframe embedding
+app.use((req, res, next) => {
+  res.removeHeader('X-Frame-Options');
+  res.setHeader('Content-Security-Policy', 'frame-ancestors *');
+  next();
+});
+
 // Middleware to serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -54,10 +61,10 @@ function validateToken(req, res, next) {
   next();
 }
 
-// API endpoint to fetch OpenRouter stats
-app.get('/api/stats', validateToken, async (req, res) => {
+// API endpoint to fetch all keys
+app.get('/api/keys', validateToken, async (req, res) => {
   try {
-    const response = await fetch('https://openrouter.ai/api/v1/key', {
+    const response = await fetch('https://openrouter.ai/api/v1/keys', {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
@@ -68,8 +75,8 @@ app.get('/api/stats', validateToken, async (req, res) => {
     if (!response.ok) {
       const errorData = await response.text();
       console.error('OpenRouter API Error:', response.status, errorData);
-      return res.status(response.status).json({ 
-        error: 'Failed to fetch OpenRouter data',
+      return res.status(response.status).json({
+        error: 'Failed to fetch OpenRouter keys',
         details: errorData
       });
     }
@@ -77,10 +84,41 @@ app.get('/api/stats', validateToken, async (req, res) => {
     const data = await response.json();
     res.json(data);
   } catch (error) {
-    console.error('Error fetching OpenRouter stats:', error);
-    res.status(500).json({ 
+    console.error('Error fetching OpenRouter keys:', error);
+    res.status(500).json({
       error: 'Internal server error',
-      message: error.message 
+      message: error.message
+    });
+  }
+});
+
+// API endpoint to fetch credits
+app.get('/api/credits', validateToken, async (req, res) => {
+  try {
+    const response = await fetch('https://openrouter.ai/api/v1/credits', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('OpenRouter API Error:', response.status, errorData);
+      return res.status(response.status).json({
+        error: 'Failed to fetch OpenRouter credits',
+        details: errorData
+      });
+    }
+
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching OpenRouter credits:', error);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: error.message
     });
   }
 });
